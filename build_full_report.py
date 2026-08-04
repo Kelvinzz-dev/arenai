@@ -9,6 +9,11 @@ import os
 import docx
 from docx import Document
 from docx.shared import Pt, Cm
+
+# Resolve all inputs and outputs relative to this script so it can be run from
+# any working directory (not only the repository root).
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
@@ -364,6 +369,9 @@ def add_figure_with_caption(img_path, caption_text, width=Cm(12)):
     p.paragraph_format.space_after = Pt(3)
     p.paragraph_format.first_line_indent = Pt(0)
     
+    # Figure assets are stored with their dark canvas/backgrounds normalized to
+    # white, so they remain legible on the white Word page and print cleanly.
+    img_path = os.path.join(BASE_DIR, img_path)
     if os.path.exists(img_path):
         p.add_run().add_picture(img_path, width=width)
     else:
@@ -403,7 +411,9 @@ def make_formula(formula_text, label):
     pf.first_line_indent = Pt(0)
     pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
     
-    run_f = p.add_run(f"[{formula_text}]")
+    # Keep the source notation explicit and unambiguous in the generated
+    # document: LaTeX display delimiters, rather than square brackets.
+    run_f = p.add_run(f"\\[{formula_text}\\]")
     set_run_font(run_f, size=Pt(12), bold=False)
     
     run_space = p.add_run("\t\t\t\t\t\t")
@@ -432,7 +442,7 @@ make_heading(1, "课题中期检查材料清单", 0)
 make_body("根据项目管理办公室及国家重点研发计划相关要求，课题组对中期检查所需的相关材料进行了全面梳理。以下为课题1（基于硅光技术的高精度角速度测量理论）所提交的全部中期检查材料清单及相关说明，确保材料内容与课题任务书中约定的研究任务及考核指标完全一致。")
 
 # Read original checklist Table 0 to preserve it
-orig_doc = Document("1 课题材料模板20260730.docx")
+orig_doc = Document(os.path.join(BASE_DIR, "1 课题材料模板20260730.docx"))
 t0 = orig_doc.tables[0]
 headers0 = [c.text.strip().replace('\n', ' ') for c in t0.rows[0].cells]
 rows0 = []
@@ -735,7 +745,7 @@ make_body("课题1将建立的基本三噪声、瑞利背向散射、偏振耦�
 make_body("编制日期：2026年8月4日", align=WD_ALIGN_PARAGRAPH.RIGHT, indent=False)
 
 # ---- Save Document ----
-output_filename = "1 课题材料模板20260730.docx"
+output_filename = os.path.join(BASE_DIR, "1 课题材料模板20260730.docx")
 doc.save(output_filename)
 print(f"Document saved successfully as '{output_filename}'!")
 print(f"File size: {os.path.getsize(output_filename)} bytes")
